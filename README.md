@@ -61,7 +61,7 @@ Listed below are the changed key combinations different from the original implem
 |Key Comb|Function|
 |:------:|:------:|
 |Mod + XK_Tab|Cycle through windows (clockwise)|
-|Mod|Shft + XK_Tab|Cycle through windows (counter clockwise)|
+|Mod + Shft + XK_Tab|Cycle through windows (counter clockwise)|
 |Mod + XK_d|Toggle deep view|
 |Mod + XK_f|Toggle maximize a window|
 |Mod + XK_g|Spawn dmenu|
