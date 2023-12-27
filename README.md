@@ -76,6 +76,9 @@ Listed below are the changed key combinations different from the original implem
 
 For a complete key combination, refer to `config.def.h`, feel free to modify.
 
+# TODO
+- [] Restack the windows picked up from deep view mode so the cycle through functionality can do things right;
+
 # Bugs
 
 For any bugs found, open an issue and I'll have it fixed if time permits.
