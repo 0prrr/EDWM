@@ -76,3 +76,7 @@ For a complete key combination, refer to `config.def.h`, feel free to modify.
 # Bugs
 
 For any bugs found, open an issue and I'll have it fixed if time permits.
+
+# Credits
+
+* [Suckless DWM](https://dwm.suckless.org/)
