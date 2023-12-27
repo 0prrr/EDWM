@@ -2,6 +2,8 @@
 
 Enhanced Dynamic Window Manager.
 
+![Screenshot](./images/screen_shot.png)
+
 Added functionalities based on the original [Dynamic Window Manager (DWM)](https://dwm.suckless.org/) to make things much easier. Thanks suckless guys, a lot!
 
 I've been using `DWM` for over 4 years, simple things keeps your mind focused on what you're doing. Since the publish of 6.4, I arranged another upgrade and added some other functionalities and features that I think will make life beautiful. I'll list them in the following sections.
