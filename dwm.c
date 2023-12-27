@@ -2314,6 +2314,8 @@ void
 togglefullscreen(const Arg *arg)
 {
     Client *c = selmon->sel;
+    if (!c)
+        return;
     if (c->issetfullscreen == 0) {
 		c->issetfullscreen = 1;
 		resizeclient(c, selmon->mx, selmon->my + bh, selmon->mw - 2 * borderpx, selmon->mh - bh - 2 * borderpx);
