@@ -70,6 +70,7 @@ Listed below are the changed key combinations different from the original implem
 |Mod + XK_c|Kill client|
 |Mod + XK_bracketright|Quit DWM|
 |Middle Mouse Button|Move window|
+|Mod + Right Mouse Button|Resize window|
 
 For a complete key combination, refer to `config.def.h`, feel free to modify.
 
