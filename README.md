@@ -68,6 +68,7 @@ Listed below are the changed key combinations different from the original implem
 |Mod + XK_f|Toggle maximize a window|
 |Mod + XK_s|Switch between two recent tags|
 |Mod + XK_z|Switch between two recent windows|
+|Mod + XK_t|Mark a window always on top|
 |Mod + XK_g|Spawn dmenu|
 |Mod + XK_a|Spawn xterm (refer to dwm.c, spawnxterm function)|
 |Mod + XK_v|Minimize a window to lower right corner of screen (maybe buggy), again to restore|
