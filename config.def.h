@@ -74,6 +74,7 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_v,      staylow,        {0} },
 	{ MODKEY,                       XK_Return, zoom,           {0} },
 	{ MODKEY,                       XK_s,      view,           {0} },
+	{ MODKEY,                       XK_z,      doswitchclient, {0} },
 	{ MODKEY,                       XK_Tab,    focusstack,     {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_Tab,    focusstack,     {.i = -1 } },
     { MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },

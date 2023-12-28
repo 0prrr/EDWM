@@ -239,6 +239,7 @@ static int xerrordummy(Display *dpy, XErrorEvent *ee);
 static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
 static void togglefullscreen(const Arg *arg);
+static void doswitchclient(const Arg *arg);
 static void staylow(const Arg *arg);
 static void entertaskview();
 static void leavetaskview();
@@ -449,7 +450,6 @@ attachBelow(Client *c)
 	c->next = c->mon->sel->next;
 	//Set the currently selected clients next property to the new client
 	c->mon->sel->next = c;
-
 }
 
 void
@@ -2195,6 +2195,16 @@ view(const Arg *arg)
 		selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
 	focus(NULL);
 	arrange(selmon);
+}
+
+void
+doswitchclient(const Arg *arg)
+{
+    Client *c = selmon->sel;
+    // although this won't happen... better to make sure
+    if (!c)
+        return;
+    focus(c->snext);
 }
 
 Client *
