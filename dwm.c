@@ -93,7 +93,7 @@ struct Client {
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh, hintsvalid;
 	int bw, oldbw;
 	unsigned int tags;
-	int isfixed, isfloating, isurgent, neverfocus, oldstate, isstaylow, issetfullscreen, isfullscreen;
+	int isalwaysontop, isfixed, isfloating, isurgent, neverfocus, oldstate, isstaylow, issetfullscreen, isfullscreen;
 	Client *next;
 	Client *snext;
 	Monitor *mon;
@@ -240,6 +240,7 @@ static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
 static void togglefullscreen(const Arg *arg);
 static void doswitchclient(const Arg *arg);
+static void raisetotop(const Arg *arg);
 static void staylow(const Arg *arg);
 static void entertaskview();
 static void leavetaskview();
@@ -812,8 +813,11 @@ drawbar(Monitor *m)
 		if (m->sel) {
 			drw_setscheme(drw, scheme[m == selmon ? SchemeSel : SchemeNorm]);
 			drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0);
-			if (m->sel->isfloating)
-				drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);
+            if (m->sel->isfloating) {
+                drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);
+                if (m->sel->isalwaysontop)
+                    drw_rect(drw, x + boxs, bh - boxw, boxw, boxw, 0, 0);
+            }
 		} else {
 			drw_setscheme(drw, scheme[SchemeNorm]);
 			drw_rect(drw, x, 0, w, bh, 1, 1);
@@ -1463,6 +1467,13 @@ restack(Monitor *m)
 		return;
 	if (m->sel->isfloating || !m->lt[m->sellt]->arrange)
 		XRaiseWindow(dpy, m->sel->win);
+
+    // raise the aot window
+    for (c = selmon->clients; c; c = c->next) {
+        if (c->tags == selmon->tagset[selmon->seltags] && c->isalwaysontop)
+            XRaiseWindow(dpy, c->win);
+    }
+
 	if (m->lt[m->sellt]->arrange) {
 		wc.stack_mode = Below;
 		wc.sibling = m->barwin;
@@ -1864,6 +1875,8 @@ togglefloating(const Arg *arg)
     if (selmon->sel->isfloating)
         resize(selmon->sel, selmon->sel->x, selmon->sel->y,
             selmon->sel->w, selmon->sel->h, 0);
+    else
+        selmon->sel->isalwaysontop = 0;
     arrange(selmon);
 }
 
@@ -2305,6 +2318,28 @@ enterstaylow(Client *c)
     focus(c->snext);
     c->isstaylow = 1;
     staylowcount += 1;
+}
+
+void
+raisetotop(const Arg *arg)
+{
+    Client *c = selmon->sel;
+    if (!c)
+        return;
+    if (c->isfullscreen)
+        return;
+
+    if(c->isalwaysontop){
+        c->isalwaysontop = 0;
+    }else{
+        // raise the aot window
+        for (Client *cc = selmon->clients; cc; cc = cc->next) {
+            if (cc->tags == selmon->tagset[selmon->seltags] && cc->isalwaysontop)
+                cc->isalwaysontop = 0;
+        }
+        c->isalwaysontop = 1;
+    }
+    arrange(selmon);
 }
 
 /* minimize window to lower right corner */
