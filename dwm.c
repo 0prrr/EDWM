@@ -2218,6 +2218,7 @@ doswitchclient(const Arg *arg)
     if (!c)
         return;
     focus(c->snext);
+    arrange(selmon);
 }
 
 Client *

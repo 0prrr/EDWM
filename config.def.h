@@ -92,12 +92,6 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
-	TAGKEYS(                        XK_4,                      3)
-	TAGKEYS(                        XK_q,                      4)
-	TAGKEYS(                        XK_w,                      5)
-	TAGKEYS(                        XK_e,                      6)
-	TAGKEYS(                        XK_r,                      7)
-	TAGKEYS(                        XK_z,                      8)
 	{ MODKEY|ShiftMask,             XK_bracketright,      quit,           {0} },
 };
 
