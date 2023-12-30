@@ -72,6 +72,7 @@ Listed below are the changed key combinations different from the original implem
 |Mod + XK_g|Spawn dmenu|
 |Mod + XK_a|Spawn xterm (refer to dwm.c, spawnxterm function)|
 |Mod + XK_v|Minimize a window to lower right corner of screen (maybe buggy), again to restore|
+|Mod + Shft + XK_l|Lock screen, need slock|
 |Mod + XK_c|Kill client|
 |Mod + XK_bracketright|Quit DWM|
 |Middle Mouse Button|Move window|
@@ -80,7 +81,8 @@ Listed below are the changed key combinations different from the original implem
 For a complete key combination, refer to `config.def.h`, feel free to modify.
 
 # TODO
-- [ ] Restack the windows picked up from deep view mode so the cycle through functionality can do things right;
+- [x] Restack the windows picked up from deep view mode so the cycle through functionality can do things right;
+- [ ] Display two windows half half on a screen;
 
 # Bugs
 
