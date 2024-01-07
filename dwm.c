@@ -57,6 +57,7 @@
 #define HEIGHT(X)               ((X)->h + 2 * (X)->bw)
 #define TAGMASK                 ((1 << LENGTH(tags)) - 1)
 #define TEXTW(X)                (drw_fontset_getwidth(drw, (X)) + lrpad)
+#define MAX_SLAVE_NUM           4
 
 /* enums */
 enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
@@ -126,6 +127,8 @@ struct Monitor {
 	int showbar;
 	int topbar;
     int istaskview;
+    int isinsnap;
+    int issnapinitstate;
 	Client *clients;
 	Client *sel;
 	Client *stack;
@@ -244,6 +247,8 @@ static void raisetotop(const Arg *arg);
 static void staylow(const Arg *arg);
 static void entertaskview();
 static void leavetaskview();
+static void snapsidebyside();
+static void swapsidebyside();
 static void enterstaylow(Client *c);
 static void leavestaylow(Client *c);
 static int lowh = 100;
@@ -406,6 +411,7 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 void
 arrange(Monitor *m)
 {
+    if (selmon->isinsnap) return;
 	if (m)
 		showhide(m->stack);
 	else for (m = mons; m; m = m->next)
@@ -1619,9 +1625,18 @@ void
 entertaskview()
 {
     Client *c;
+    int client_count = 0;
     selmon->istaskview = 1;
     for (c = selmon->clients; c; c = c->next) {
         if (c->tags == selmon->tagset[selmon->seltags]) {
+            // deal with more than 5 windows
+            // which means by default, when master area only has 1 window
+            // slave area will be stacked by 4 windows, that's the maximum
+            // number of windows I want for slave area, because too many
+            // is going to make it hard to see. So when client count exceeds
+            // 6, let's increase master area by number of client count - default
+            // maximum client windows (4).
+            client_count += 1;
             // leavestaylow for staylow windows first
             if (c->isstaylow)
                 leavestaylow(c);
@@ -1630,12 +1645,25 @@ entertaskview()
             c->isfloating = 0;
         }
     }
+
+    if (client_count > 3) {
+        Arg arg;
+        if (client_count % 2 == 0) {
+            // even number
+            arg.i = client_count / 2 - 1;
+        } else {
+            // odd number
+            arg.i = (client_count - 1) / 2 - 1;
+        }
+        incnmaster(&arg);
+    }
     arrange(selmon);
 }
 
 void
 leavetaskview()
 {
+    if (!selmon->istaskview) return;
     Client *c;
     selmon->istaskview = 0;
     for (c = selmon->clients; c; c = c->next) {
@@ -1647,17 +1675,63 @@ leavetaskview()
                 focus(c);
         }
     }
+    selmon->nmaster = 1;
     arrange(selmon);
+}
+
+void
+snapsidebyside()
+{
+    Client *c;
+    c = selmon->sel;
+    // safe harness
+    // if only one client, or any of the window is in full screen mode, return
+    if (!c || !c->snext) return;
+    if (selmon->isinsnap) {
+        selmon->isinsnap = 0;
+        resizeclient(c, c->oldx, c->oldy, c->oldw, c->oldh);
+        Client *csn = c->snext;
+        resizeclient(csn, csn->oldx, csn->oldy, csn->oldw, csn->oldh);
+    } else {
+        selmon->isinsnap = 1;
+        int w = (selmon->mw - 2 * borderpx) / 2;
+        int h = selmon->mh - bh - 2 * borderpx;
+        resizeclient(c, selmon->mx, selmon->my + bh, w, h);
+        resizeclient(c->snext, selmon->mx + w, selmon->my + bh, w, h);
+    }
+}
+
+void
+swapsidebyside()
+{
+    if (!selmon) return;
+    Client *c = selmon->sel;
+    // only works in snap mode
+    if (!c || !c->snext || !selmon->isinsnap) return;
+    // swap two clients side by side
+    Client *csn = c->snext;
+
+    int w = (selmon->mw - 2 * borderpx) / 2;
+    int h = selmon->mh - bh - 2 * borderpx;
+
+    if (selmon->issnapinitstate) {
+        selmon->issnapinitstate = 0;
+        resizeclient(c, selmon->mx, selmon->my + bh, w, h);
+        resizeclient(csn, selmon->mx + w, selmon->my + bh, w, h);
+    } else {
+        selmon->issnapinitstate = 1;
+        resizeclient(c, selmon->mx + w, selmon->my + bh, w, h);
+        resizeclient(csn, selmon->mx, selmon->my + bh, w, h);
+    }
 }
 
 void
 setlayout(const Arg *arg)
 {
-    if (!selmon->sel) {
-        return;
-    }
+    // only 1 or no client, no need to enter task view
+    if (!selmon->sel || !selmon->sel->snext) return;
 
-    if (selmon->istaskview == 0) {
+    if (!selmon->istaskview) {
         entertaskview();
     } else {
         leavetaskview();
@@ -2215,8 +2289,8 @@ doswitchclient(const Arg *arg)
 {
     Client *c = selmon->sel;
     // although this won't happen... better to make sure
-    if (!c)
-        return;
+    if (!c) return;
+    if (!c->snext) return;
     focus(c->snext);
     arrange(selmon);
 }
@@ -2362,7 +2436,7 @@ togglefullscreen(const Arg *arg)
     Client *c = selmon->sel;
     if (!c)
         return;
-    if (c->issetfullscreen == 0) {
+    if (!c->issetfullscreen) {
 		c->issetfullscreen = 1;
 		resizeclient(c, selmon->mx, selmon->my + bh, selmon->mw - 2 * borderpx, selmon->mh - bh - 2 * borderpx);
 	} else {

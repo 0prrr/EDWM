@@ -19,7 +19,7 @@ static const char *colors[][3]      = {
 };
 
 /* tagging */
-// reduced to three tags
+// static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 static const char *tags[] = { "1", "2", "3" };
 
 static const Rule rules[] = {
@@ -30,6 +30,18 @@ static const Rule rules[] = {
 	/* class      instance    title       tags mask     isfloating   monitor */
     // don't need these any more, everything starts up floating
     { "Sample",                NULL,       NULL,      0,             1,           -1 },
+    // { "Gimp",               NULL,       NULL,      1 << 4,        1,           -1 },
+    // { "burp-StartBurp",     NULL,       NULL,      1 << 3,        1,           -1 },
+    // { "st-256color",        NULL,       NULL,      0,             1,           -1 },
+    // { "Wireshark",          NULL,       NULL,      0,             1,           -1 },
+    // { "vlc",                NULL,       NULL,      0,             1,           -1 },
+    // { "Xfe",                NULL,       NULL,      0,             1,           -1 },
+    // { "XpdfReader",         NULL,       NULL,      0,             1,           -1 },
+    // { "libreoffice-writer", NULL,       NULL,      0,             1,           -1 },
+    // { "ksnip",              NULL,       NULL,      0,             1,           -1 },
+    // { "Marker",             NULL,       NULL,      0,             1,           -1 },
+    // { "XTerm",              NULL,       NULL,      0,             1,           -1 },
+    // { "feh",                NULL,       NULL,      0,             1,           -1 },
 };
 
 /* layout(s) */
@@ -59,40 +71,59 @@ static const Layout layouts[] = {
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
-static const char *termcmd[]  = { "xterm", NULL };
+static const char *termcmd[]  = { "qterminal", NULL };
+static const char *slockcmd[]  = { "/home/opr/.scripts/dpms-off.sh", NULL };
+static const char *ksnipcmd[]  = { "ksnip", "-r", NULL };
+static const char *wordlistcmd[]  = { "python", "/home/opr/.scripts/wordlist-input.py", NULL };
+static const char *webshellcmd[]  = { "python", "/home/opr/.scripts/webshell-input.py", NULL };
 
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
-	{ MODKEY,                       XK_g,      spawn,          {.v = dmenucmd } },
+	{ MODKEY,                       XK_q,      spawn,          {.v = dmenucmd } },
+	{ MODKEY,             		    XK_c,      spawn,     	   {.v = ksnipcmd } },
 	{ MODKEY,             		    XK_a,      spawnxterm,     {0} },
 	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
+	{ MODKEY|ShiftMask,             XK_l,      spawn,          {.v = slockcmd } },
+	{ MODKEY|ShiftMask,             XK_u,      spawn,          {.v = wordlistcmd } },
+	{ MODKEY|ShiftMask,             XK_i,      spawn,          {.v = webshellcmd } },
 	{ MODKEY,                       XK_b,      togglebar,      {0} },
-	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
-	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
-	{ MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
-	{ MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
-	{ MODKEY,                       XK_t,      raisetotop,     {0} },
+	{ MODKEY,                       XK_r,      raisetotop,     {0} },
 	{ MODKEY,                       XK_v,      staylow,        {0} },
 	{ MODKEY,                       XK_Return, zoom,           {0} },
-	{ MODKEY,                       XK_s,      view,           {0} },
-	{ MODKEY,                       XK_z,      doswitchclient, {0} },
-	{ MODKEY,                       XK_Tab,    focusstack,     {.i = +1 } },
-	{ MODKEY|ShiftMask,             XK_Tab,    focusstack,     {.i = -1 } },
-    { MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },
+	{ MODKEY,                       XK_t,      view,           {0} },
+	{ MODKEY,                       XK_w,      doswitchclient, {0} },
+	{ MODKEY,                       XK_Tab,    focusstack,     {.i = -1 } },
+	{ MODKEY|ShiftMask,             XK_Tab,    focusstack,     {.i = +1 } },
+    { MODKEY,                       XK_e,      snapsidebyside, {0} },
+    { MODKEY,                       XK_s,      swapsidebyside, {0} },
 	{ MODKEY|ShiftMask,             XK_c,      killclient,     {0} },
 	{ MODKEY,                       XK_d,      setlayout,      {.v = &layouts[0]} },
     { MODKEY,                       XK_f,      togglefullscreen,  {0} },
-	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
-	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
-	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
-	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
-	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
-	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
-	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+	{ MODKEY|ShiftMask,             XK_g,      togglefloating, {0} },
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
 	{ MODKEY|ShiftMask,             XK_bracketright,      quit,           {0} },
+    // TAGKEYS(                        XK_4,                      3)
+    // TAGKEYS(                        XK_q,                      4)
+    // TAGKEYS(                        XK_w,                      5)
+    // TAGKEYS(                        XK_e,                      6)
+    // TAGKEYS(                        XK_r,                      7)
+    // TAGKEYS(                        XK_z,                      8)
+    // { MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
+	// { MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
+    // { MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },
+	// { MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
+	// { MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
+	// { MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
+	// { MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
+	// { MODKEY,                       XK_0,      view,           {.ui = ~0 } },
+	// { MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
+	// { MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
+	// { MODKEY,                       XK_period, focusmon,       {.i = +1 } },
+	// { MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
+	// { MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+	// { MODKEY,                       XK_space,  setlayout,      {0} },
 };
 
 /* button definitions */
