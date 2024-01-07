@@ -84,7 +84,11 @@ For a complete key combination, refer to `config.def.h`, feel free to modify.
 
 # TODO
 - [x] Restack the windows picked up from deep view mode so the cycle through functionality can do things right;
-- [ ] Display two windows half half on a screen;
+- [X] Display two windows half half on a screen;
+
+# Known Issues
+
+* If sometimes snap function and swap function doesn't work, press the key combination twice may solve the problem. Some variables still needs a bit of tweaking.
 
 # Bugs
 
