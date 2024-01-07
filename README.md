@@ -90,6 +90,8 @@ For a complete key combination, refer to `config.def.h`, feel free to modify.
 
 * If sometimes snap function and swap function doesn't work, press the key combination twice may solve the problem. Some variables still needs a bit of tweaking.
 
+* Check is "[S]" symbol is on status bar. If only one window is opened, press `Mod + XK_e` will exit snap mode and everything should be fine.
+
 # Bugs
 
 For any bugs found, open an issue and I'll have it fixed if time permits.

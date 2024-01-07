@@ -813,7 +813,15 @@ drawbar(Monitor *m)
     snprintf(buf, sizeof buf, "#%d", client_count);
     w = TEXTW(buf);
 	drw_setscheme(drw, scheme[SchemeNorm]);
-	x = drw_text(drw, x, 0, w + 10, bh, lrpad / 2, buf, 0);
+	x = drw_text(drw, x, 0, selmon->isinsnap ? w : w + 10, bh, lrpad / 2, buf, 0);
+
+    // draw snap mode symbol
+    if (selmon->isinsnap) {
+        snprintf(buf, sizeof buf, "%s", "[S]");
+        w = TEXTW(buf);
+        drw_setscheme(drw, scheme[SchemeNorm]);
+        x = drw_text(drw, x, 0, w + 10, bh, lrpad / 2, buf, 0);
+    }
 
 	if ((w = m->ww - tw - x) > bh) {
 		if (m->sel) {
@@ -1624,6 +1632,9 @@ setfullscreen(Client *c, int fullscreen)
 void
 entertaskview()
 {
+    // only 1 or no client, no need to enter task view
+    if (!selmon->sel || !selmon->sel->snext) return;
+
     Client *c;
     int client_count = 0;
     selmon->istaskview = 1;
@@ -1686,7 +1697,12 @@ snapsidebyside()
     c = selmon->sel;
     // safe harness
     // if only one client, or any of the window is in full screen mode, return
-    if (!c || !c->snext) return;
+    if (!c || !c->snext) {
+        // exit snap mode
+        selmon->isinsnap = 0;
+        drawbar(selmon);
+        return;
+    }
     if (selmon->isinsnap) {
         selmon->isinsnap = 0;
         resizeclient(c, c->oldx, c->oldy, c->oldw, c->oldh);
@@ -1699,6 +1715,7 @@ snapsidebyside()
         resizeclient(c, selmon->mx, selmon->my + bh, w, h);
         resizeclient(c->snext, selmon->mx + w, selmon->my + bh, w, h);
     }
+    drawbar(selmon);
 }
 
 void
@@ -1728,8 +1745,7 @@ swapsidebyside()
 void
 setlayout(const Arg *arg)
 {
-    // only 1 or no client, no need to enter task view
-    if (!selmon->sel || !selmon->sel->snext) return;
+    if (!selmon->sel) return;
 
     if (!selmon->istaskview) {
         entertaskview();
@@ -2434,8 +2450,7 @@ void
 togglefullscreen(const Arg *arg)
 {
     Client *c = selmon->sel;
-    if (!c)
-        return;
+    if (!c) return;
     if (!c->issetfullscreen) {
 		c->issetfullscreen = 1;
 		resizeclient(c, selmon->mx, selmon->my + bh, selmon->mw - 2 * borderpx, selmon->mh - bh - 2 * borderpx);

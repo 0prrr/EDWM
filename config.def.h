@@ -104,6 +104,26 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
 	{ MODKEY|ShiftMask,             XK_bracketright,      quit,           {0} },
+    // TAGKEYS(                        XK_4,                      3)
+    // TAGKEYS(                        XK_q,                      4)
+    // TAGKEYS(                        XK_w,                      5)
+    // TAGKEYS(                        XK_e,                      6)
+    // TAGKEYS(                        XK_r,                      7)
+    // TAGKEYS(                        XK_z,                      8)
+    // { MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
+	// { MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
+    // { MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },
+	// { MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
+	// { MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
+	// { MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
+	// { MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
+	// { MODKEY,                       XK_0,      view,           {.ui = ~0 } },
+	// { MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
+	// { MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
+	// { MODKEY,                       XK_period, focusmon,       {.i = +1 } },
+	// { MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
+	// { MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+	// { MODKEY,                       XK_space,  setlayout,      {0} },
 };
 
 /* button definitions */
