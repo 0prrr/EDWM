@@ -1,7 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-static const unsigned int borderpx  = 1;        /* border pixel of windows */
+static const unsigned int borderpx  = 2;        /* border pixel of windows */
 static const unsigned int snap      = 16;       /* snap pixel */
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
@@ -53,8 +53,8 @@ static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen win
 static const Layout layouts[] = {
 	/* symbol     arrange function */
     { "><>",      tile },    /* first entry is default */
-    { "[D]",      NULL },    /* no layout function means floating behavior, meaning in task view */
-	{ "[M]",      monocle },
+    { "[T]",      NULL }    /* no layout function means floating behavior, meaning in task view */
+	// { "[M]",      monocle },
 };
 
 /* key definitions */
@@ -83,7 +83,7 @@ static const Key keys[] = {
 	{ MODKEY,             		    XK_c,      spawn,     	   {.v = ksnipcmd } },
 	{ MODKEY,             		    XK_a,      spawnxterm,     {0} },
 	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
-	{ MODKEY|ShiftMask,             XK_l,      spawn,          {.v = slockcmd } },
+	{ MODKEY|ShiftMask,             XK_p,      spawn,          {.v = slockcmd } },
 	{ MODKEY|ShiftMask,             XK_u,      spawn,          {.v = wordlistcmd } },
 	{ MODKEY|ShiftMask,             XK_i,      spawn,          {.v = webshellcmd } },
 	{ MODKEY,                       XK_b,      togglebar,      {0} },
@@ -91,11 +91,15 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_v,      staylow,        {0} },
 	{ MODKEY,                       XK_Return, zoom,           {0} },
 	{ MODKEY,                       XK_t,      view,           {0} },
-	{ MODKEY,                       XK_w,      doswitchclient, {0} },
-	{ MODKEY,                       XK_Tab,    focusstack,     {.i = -1 } },
-	{ MODKEY|ShiftMask,             XK_Tab,    focusstack,     {.i = +1 } },
+	{ MODKEY,                       XK_w,      focusstack,     {.i = -1 } },
+	{ MODKEY|ShiftMask,             XK_w,      focusstack,     {.i = +1 } },
+    { MODKEY,                       XK_Tab,    doswitchclient, {0} },
     { MODKEY,                       XK_e,      snapsidebyside, {0} },
     { MODKEY,                       XK_s,      swapsidebyside, {0} },
+    { MODKEY,                       XK_j,      snap2left,      {0} },
+    { MODKEY,                       XK_k,      snap2right,     {0} },
+    { MODKEY|ShiftMask,             XK_j,      adjustwidth,    {.i = +15} },
+    { MODKEY|ShiftMask,             XK_k,      adjustwidth,    {.i = -15} },
 	{ MODKEY|ShiftMask,             XK_c,      killclient,     {0} },
 	{ MODKEY,                       XK_d,      setlayout,      {.v = &layouts[0]} },
     { MODKEY,                       XK_f,      togglefullscreen,  {0} },

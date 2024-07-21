@@ -49,15 +49,13 @@
 #define CLEANMASK(mask)         (mask & ~(numlockmask|LockMask) & (ShiftMask|ControlMask|Mod1Mask|Mod2Mask|Mod3Mask|Mod4Mask|Mod5Mask))
 #define INTERSECT(x,y,w,h,m)    (MAX(0, MIN((x)+(w),(m)->wx+(m)->ww) - MAX((x),(m)->wx)) \
                                * MAX(0, MIN((y)+(h),(m)->wy+(m)->wh) - MAX((y),(m)->wy)))
-#define ISVISIBLEONTAG(C, T)    ((C->tags & T))
-#define ISVISIBLE(C)            ISVISIBLEONTAG(C, C->mon->tagset[C->mon->seltags])
+#define ISVISIBLE(C)            ((C->tags & C->mon->tagset[C->mon->seltags]))
 #define LENGTH(X)               (sizeof X / sizeof X[0])
 #define MOUSEMASK               (BUTTONMASK|PointerMotionMask)
 #define WIDTH(X)                ((X)->w + 2 * (X)->bw)
 #define HEIGHT(X)               ((X)->h + 2 * (X)->bw)
 #define TAGMASK                 ((1 << LENGTH(tags)) - 1)
 #define TEXTW(X)                (drw_fontset_getwidth(drw, (X)) + lrpad)
-#define MAX_SLAVE_NUM           4
 
 /* enums */
 enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
@@ -91,6 +89,7 @@ struct Client {
 	float mina, maxa;
 	int x, y, w, h;
 	int oldx, oldy, oldw, oldh;
+    int x_before_snap, y_before_snap, w_before_snap, h_before_snap;
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh, hintsvalid;
 	int bw, oldbw;
 	unsigned int tags;
@@ -129,12 +128,15 @@ struct Monitor {
     int istaskview;
     int isinsnap;
     int issnapinitstate;
+    int snap_tag;
+    int taskview_tag;
+    int cur_tag;
 	Client *clients;
 	Client *sel;
 	Client *stack;
 	Monitor *next;
 	Window barwin;
-	const Layout *lt[3];
+	const Layout *lt[2];
 };
 
 typedef struct {
@@ -152,7 +154,6 @@ static int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interac
 static void arrange(Monitor *m);
 static void arrangemon(Monitor *m);
 static void attach(Client *c);
-static void attachBelow(Client *c);
 static void attachstack(Client *c);
 static void buttonpress(XEvent *e);
 static void checkotherwm(void);
@@ -190,7 +191,6 @@ static void maprequest(XEvent *e);
 static void monocle(Monitor *m);
 static void motionnotify(XEvent *e);
 static void movemouse(const Arg *arg);
-static Client *nexttagged(Client *c);
 static Client *nexttiled(Client *c);
 static void pop(Client *c);
 static void propertynotify(XEvent *e);
@@ -213,7 +213,6 @@ static void setup(void);
 static void seturgent(Client *c, int urg);
 static void showhide(Client *c);
 static void spawn(const Arg *arg);
-static void spawnxterm(const Arg *arg);
 static void tag(const Arg *arg);
 static void tagmon(const Arg *arg);
 static void tile(Monitor *m);
@@ -245,12 +244,17 @@ static void togglefullscreen(const Arg *arg);
 static void doswitchclient(const Arg *arg);
 static void raisetotop(const Arg *arg);
 static void staylow(const Arg *arg);
+static void clear_client_size_pos_data(Client* c);
 static void entertaskview();
 static void leavetaskview();
 static void snapsidebyside();
 static void swapsidebyside();
-static void enterstaylow(Client *c);
-static void leavestaylow(Client *c);
+static void snap2left();
+static void snap2right();
+static void adjustwidth(const Arg* arg);
+static void enterstaylow(Client* c);
+static void leavestaylow(Client* c);
+static void spawnxterm(const Arg* arg);
 static int lowh = 100;
 static int loww = 300;
 static int offsetx = 10;
@@ -259,7 +263,6 @@ static int offsetoverlap = 8;
 static int staylowcount = 0;
 static int offsetoverlapxterm = 20;
 static int xtermcount = 0;
-
 
 /* variables */
 static const char broken[] = "broken";
@@ -411,7 +414,6 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 void
 arrange(Monitor *m)
 {
-    if (selmon->isinsnap) return;
 	if (m)
 		showhide(m->stack);
 	else for (m = mons; m; m = m->next)
@@ -437,26 +439,6 @@ attach(Client *c)
 {
 	c->next = c->mon->clients;
 	c->mon->clients = c;
-}
-void
-attachBelow(Client *c)
-{
-	//If there is nothing on the monitor or the selected client is floating, attach as normal
-	if(c->mon->sel == NULL || c->mon->sel->isfloating) {
-        Client *at = nexttagged(c);
-        if(!at) {
-            attach(c);
-            return;
-            }
-        c->next = at->next;
-        at->next = c;
-		return;
-	}
-
-	//Set the new client's next property to the same as the currently selected clients next
-	c->next = c->mon->sel->next;
-	//Set the currently selected clients next property to the new client
-	c->mon->sel->next = c;
 }
 
 void
@@ -709,7 +691,7 @@ createmon(void)
 	m->topbar = topbar;
 	m->lt[0] = &layouts[0];
 	m->lt[1] = &layouts[1];
-	m->lt[2] = &layouts[2];
+    m->cur_tag = 0x1;
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
 	return m;
 }
@@ -792,7 +774,6 @@ drawbar(Monitor *m)
         if (c->tags == m->tagset[m->seltags])
             client_count += 1;
 	}
-
 	x = 0;
 	for (i = 0; i < LENGTH(tags); i++) {
 		w = TEXTW(tags[i]);
@@ -805,10 +786,18 @@ drawbar(Monitor *m)
 		x += w;
 	}
 
-    // stop drawing symbols for layouts
-    w = TEXTW(m->ltsymbol);
-    drw_setscheme(drw, scheme[SchemeNorm]);
-    x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0);
+    // drawing symbols for layouts
+    // according to if the tag is under taskview
+    if (selmon->istaskview && selmon->cur_tag == selmon->taskview_tag) {
+        w = TEXTW("[T]");
+        drw_setscheme(drw, scheme[SchemeNorm]);
+        x = drw_text(drw, x, 0, w, bh, lrpad / 2, "[T]", 0);
+    }
+    else {
+        w = TEXTW("><>");
+        drw_setscheme(drw, scheme[SchemeNorm]);
+        x = drw_text(drw, x, 0, w, bh, lrpad / 2, "><>", 0);
+    }
 
     snprintf(buf, sizeof buf, "#%d", client_count);
     w = TEXTW(buf);
@@ -816,7 +805,7 @@ drawbar(Monitor *m)
 	x = drw_text(drw, x, 0, selmon->isinsnap ? w : w + 10, bh, lrpad / 2, buf, 0);
 
     // draw snap mode symbol
-    if (selmon->isinsnap) {
+    if (selmon->isinsnap && selmon->cur_tag == selmon->snap_tag) {
         snprintf(buf, sizeof buf, "%s", "[S]");
         w = TEXTW(buf);
         drw_setscheme(drw, scheme[SchemeNorm]);
@@ -1179,7 +1168,7 @@ manage(Window w, XWindowAttributes *wa)
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
 	if (c->isfloating)
 		XRaiseWindow(dpy, c->win);
-	attachBelow(c);
+	attach(c);
 	attachstack(c);
 	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
 		(unsigned char *) &(c->win), 1);
@@ -1250,7 +1239,7 @@ motionnotify(XEvent *e)
 void
 movemouse(const Arg *arg)
 {
-	int x, y, ocx, ocy, nx, ny;
+	int x, y, ocx, ocy, nx, ny, x_restore_from_snap, y_restore_from_snap, restore_from_snap = 0;
 	Client *c;
 	Monitor *m;
 	XEvent ev;
@@ -1268,6 +1257,17 @@ movemouse(const Arg *arg)
 		return;
 	if (!getrootptr(&x, &y))
 		return;
+
+    int c_right_edge = c->x + c->w;
+    if ((c->x == 0 && c->x_before_snap != 0) || (c_right_edge == selmon->mw - borderpx * 2 && c->x_before_snap !=0))
+    {
+        x_restore_from_snap = x - c->w_before_snap / 2;
+        y_restore_from_snap = y - c->h_before_snap / 2;
+        resizeclient(c, x_restore_from_snap, y_restore_from_snap, c->w_before_snap, c->h_before_snap);
+        clear_client_size_pos_data(c);
+        restore_from_snap = 1;
+    }
+
 	do {
 		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask, &ev);
 		switch(ev.type) {
@@ -1281,8 +1281,16 @@ movemouse(const Arg *arg)
 				continue;
 			lasttime = ev.xmotion.time;
 
-			nx = ocx + (ev.xmotion.x - x);
-			ny = ocy + (ev.xmotion.y - y);
+            if (restore_from_snap)
+            {
+                nx = x_restore_from_snap + (ev.xmotion.x - x);
+                ny = y_restore_from_snap + (ev.xmotion.y - y);
+            }
+            else
+            {
+                nx = ocx + (ev.xmotion.x - x);
+                ny = ocy + (ev.xmotion.y - y);
+            }
 			if (abs(selmon->wx - nx) < snap)
 				nx = selmon->wx;
 			else if (abs((selmon->wx + selmon->ww) - (nx + WIDTH(c))) < snap)
@@ -1305,16 +1313,13 @@ movemouse(const Arg *arg)
 		selmon = m;
 		focus(NULL);
 	}
-}
 
- Client *
-nexttagged(Client *c) {
-	Client *walked = c->mon->clients;
-	for(;
-		walked && (walked->isfloating || !ISVISIBLEONTAG(walked, c->tags));
-		walked = walked->next
-	);
-	return walked;
+    if (c->x < -20)
+        snap2left();
+
+    c_right_edge = c->x + c->w;
+    if (c_right_edge > selmon->mw + 20)
+        snap2right();
 }
 
 Client *
@@ -1549,7 +1554,7 @@ sendmon(Client *c, Monitor *m)
 	detachstack(c);
 	c->mon = m;
 	c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
-	attachBelow(c);
+	attach(c);
 	attachstack(c);
 	focus(NULL);
 	arrange(NULL);
@@ -1635,9 +1640,13 @@ entertaskview()
     // only 1 or no client, no need to enter task view
     if (!selmon->sel || !selmon->sel->snext) return;
 
+    if (selmon->isinsnap)
+        snapsidebyside();
+
     Client *c;
-    int client_count = 0;
-    selmon->istaskview = 1;
+    int client_count = 0x0;
+    selmon->istaskview = 0x1;
+    selmon->taskview_tag = selmon->sel->tags;
     for (c = selmon->clients; c; c = c->next) {
         if (c->tags == selmon->tagset[selmon->seltags]) {
             // deal with more than 5 windows
@@ -1653,13 +1662,13 @@ entertaskview()
                 leavestaylow(c);
 
             c->oldstate = c->isfloating;
-            c->isfloating = 0;
+            c->isfloating = 0x0;
         }
     }
 
-    if (client_count > 3) {
+    if (client_count > 0x3) {
         Arg arg;
-        if (client_count % 2 == 0) {
+        if (client_count % 2 == 0x0) {
             // even number
             arg.i = client_count / 2 - 1;
         } else {
@@ -1676,7 +1685,8 @@ leavetaskview()
 {
     if (!selmon->istaskview) return;
     Client *c;
-    selmon->istaskview = 0;
+    selmon->istaskview = 0x0;
+    selmon->taskview_tag = 0x0;
     for (c = selmon->clients; c; c = c->next) {
         if (c->tags == selmon->tagset[selmon->seltags]) {
             c->isfloating = 1;
@@ -1691,27 +1701,62 @@ leavetaskview()
 }
 
 void
+clear_client_size_pos_data(Client *c)
+{
+    if (!c) return;
+
+    c->x_before_snap = 0x0;
+    c->y_before_snap = 0x0;
+    c->w_before_snap = 0x0;
+    c->h_before_snap = 0x0;
+}
+
+void
 snapsidebyside()
 {
     Client *c;
     c = selmon->sel;
+    if (!c) return;
     // safe harness
     // if only one client, or any of the window is in full screen mode, return
-    if (!c || !c->snext) {
+    if (!c || !c->snext || c->snext->tags != c->tags) {
         // exit snap mode
         selmon->isinsnap = 0;
         drawbar(selmon);
         return;
     }
+
+    if (selmon->istaskview)
+        // if current in task view
+        // exit task view
+        leavetaskview();
+
     if (selmon->isinsnap) {
         selmon->isinsnap = 0;
-        resizeclient(c, c->oldx, c->oldy, c->oldw, c->oldh);
+        selmon->snap_tag = 0x0;
         Client *csn = c->snext;
-        resizeclient(csn, csn->oldx, csn->oldy, csn->oldw, csn->oldh);
-    } else {
+        if (c->w_before_snap != 0 && c->h_before_snap != 0)
+            resizeclient(c, c->x_before_snap, c->y_before_snap, c->w_before_snap, c->h_before_snap);
+        if (csn->w_before_snap != 0 && csn->h_before_snap != 0)
+            resizeclient(csn, csn->x_before_snap, csn->y_before_snap, csn->w_before_snap, csn->h_before_snap);
+        clear_client_size_pos_data(c);
+        clear_client_size_pos_data(csn);
+    } else if (!selmon->isinsnap) {
         selmon->isinsnap = 1;
-        int w = (selmon->mw - 2 * borderpx) / 2;
-        int h = selmon->mh - bh - 2 * borderpx;
+        selmon->snap_tag = c->tags;
+
+        c->x_before_snap = c->x;
+        c->y_before_snap = c->y;
+        c->w_before_snap = c->w;
+        c->h_before_snap = c->h;
+
+        c->snext->x_before_snap = c->snext->x;
+        c->snext->y_before_snap = c->snext->y;
+        c->snext->w_before_snap = c->snext->w;
+        c->snext->h_before_snap = c->snext->h;
+
+        int w = (selmon->mw - borderpx * 2) / 2;
+        int h = selmon->mh - bh - borderpx * 2;
         resizeclient(c, selmon->mx, selmon->my + bh, w, h);
         resizeclient(c->snext, selmon->mx + w, selmon->my + bh, w, h);
     }
@@ -1723,6 +1768,7 @@ swapsidebyside()
 {
     if (!selmon) return;
     Client *c = selmon->sel;
+
     // only works in snap mode
     if (!c || !c->snext || !selmon->isinsnap) return;
     // swap two clients side by side
@@ -1743,15 +1789,70 @@ swapsidebyside()
 }
 
 void
+snap2left()
+{
+    Client *c = selmon->sel;
+    if (!c) return;
+    if (selmon->isinsnap) return;
+
+    c->x_before_snap = c->x;
+    c->y_before_snap = c->y;
+    c->w_before_snap = c->w;
+    c->h_before_snap = c->h;
+
+    int w = (selmon->mw - 2 * borderpx) / 2 - borderpx * 2;
+    int h = selmon->mh - bh - 2 * borderpx;
+    resizeclient(c, selmon->mx, selmon->my + bh, w, h);
+}
+
+void
+snap2right()
+{
+    Client *c = selmon->sel;
+    if (!c) return;
+    if (selmon->isinsnap) return;
+
+    c->x_before_snap = c->x;
+    c->y_before_snap = c->y;
+    c->w_before_snap = c->w;
+    c->h_before_snap = c->h;
+
+    int w = (selmon->mw - 2 * borderpx) / 2;
+    int h = selmon->mh - bh - 2 * borderpx;
+    resizeclient(c, selmon->mx + w, selmon->my + bh, w, h);
+}
+
+void
+adjustwidth(const Arg* arg)
+{
+    Client* c = selmon->sel;
+    if (!c) return;
+    Client* cn = c->snext;
+    if (!cn) return;
+
+    int offset = arg->i;
+
+    if (c->x == 0)
+    {
+        resizeclient(c, c->x, c->y, c->w + offset, c->h);
+        resizeclient(cn, cn->x + offset, cn->y, cn->w + (~offset + 1), cn->h);
+    }
+    else
+    {
+        resizeclient(c, c->x + ~offset + 1, c->y, c->w + offset, c->h);
+        resizeclient(cn, cn->x, cn->y, cn->w + ~offset + 1, cn->h);
+    }
+}
+
+void
 setlayout(const Arg *arg)
 {
     if (!selmon->sel) return;
 
-    if (!selmon->istaskview) {
+    if (!selmon->istaskview)
         entertaskview();
-    } else {
+    else
         leavetaskview();
-    }
 }
 
 /* arg > 1.0 will set mfact absolutely */
@@ -2086,7 +2187,7 @@ updatebarpos(Monitor *m)
 }
 
 void
-updateclientlist()
+updateclientlist(void)
 {
 	Client *c;
 	Monitor *m;
@@ -2151,7 +2252,6 @@ updategeom(void)
 				detachstack(c);
 				c->mon = mons;
 				attach(c);
-				attachBelow(c);
 				attachstack(c);
 			}
 			if (m == selmon)
@@ -2291,11 +2391,15 @@ updatewmhints(Client *c)
 void
 view(const Arg *arg)
 {
-	if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags])
+    unsigned cur_tag = arg->ui & TAGMASK;
+	if (cur_tag == selmon->tagset[selmon->seltags])
 		return;
 	selmon->seltags ^= 1; /* toggle sel tagset */
-	if (arg->ui & TAGMASK)
-		selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
+	if (cur_tag)
+    {
+        selmon->tagset[selmon->seltags] = cur_tag;
+        selmon->cur_tag = cur_tag;
+    }
 	focus(NULL);
 	arrange(selmon);
 }
@@ -2304,11 +2408,10 @@ void
 doswitchclient(const Arg *arg)
 {
     Client *c = selmon->sel;
-    // although this won't happen... better to make sure
     if (!c) return;
     if (!c->snext) return;
     focus(c->snext);
-    arrange(selmon);
+    restack(selmon);
 }
 
 Client *
