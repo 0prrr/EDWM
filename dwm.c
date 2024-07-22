@@ -93,7 +93,7 @@ struct Client {
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh, hintsvalid;
 	int bw, oldbw;
 	unsigned int tags;
-	int isalwaysontop, isfixed, isfloating, isurgent, neverfocus, oldstate, isstaylow, issetfullscreen, isfullscreen;
+	int isalwaysontop, isfixed, isfloating, isurgent, neverfocus, oldstate, isstaylow, issetfullscreen, isfullscreen, isinsnap;
 	Client *next;
 	Client *snext;
 	Monitor *mon;
@@ -318,6 +318,7 @@ applyrules(Client *c)
     // let's make every new window opened as floating
 	c->isfloating = 1;
 	c->issetfullscreen = 0;
+    c->isinsnap = 0;
 	c->tags = 0;
 	XGetClassHint(dpy, c->win, &ch);
 	class    = ch.res_class ? ch.res_class : broken;
@@ -1259,13 +1260,20 @@ movemouse(const Arg *arg)
 		return;
 
     int c_right_edge = c->x + c->w;
-    if ((c->x == 0 && c->x_before_snap != 0) || (c_right_edge == selmon->mw - borderpx * 2 && c->x_before_snap !=0))
+    int screen_right_edge = selmon->wx + selmon->ww - borderpx * 2;
+    // selmon->wx is the left edge of the screen, not necessarily 0
+    // selmon->wx + selmon->ww is the right edge of the screen
+    // the - 4, don't understand what happens, when snapped to the right, if
+    // whatever window is created, the right edge of the snapped window will
+    // be 4px less than screen right edge... I guess universe is expanding
+    if ((c->x == selmon->wx || c_right_edge == screen_right_edge || c_right_edge == screen_right_edge - 4) && c->y_before_snap != 0)
     {
         x_restore_from_snap = x - c->w_before_snap / 2;
         y_restore_from_snap = y - c->h_before_snap / 2;
         resizeclient(c, x_restore_from_snap, y_restore_from_snap, c->w_before_snap, c->h_before_snap);
         clear_client_size_pos_data(c);
         restore_from_snap = 1;
+        c->isinsnap = 0;
     }
 
 	do {
@@ -1314,11 +1322,11 @@ movemouse(const Arg *arg)
 		focus(NULL);
 	}
 
-    if (c->x < -20)
+    if (c->x < selmon->wx -20)
         snap2left();
 
     c_right_edge = c->x + c->w;
-    if (c_right_edge > selmon->mw + 20)
+    if (c_right_edge > selmon->wx + selmon->ww + 20)
         snap2right();
 }
 
@@ -1714,12 +1722,14 @@ clear_client_size_pos_data(Client *c)
 void
 snapsidebyside()
 {
-    Client *c;
+    Client* c;
+    Client* csn;
     c = selmon->sel;
     if (!c) return;
+    csn = c->snext;
     // safe harness
     // if only one client, or any of the window is in full screen mode, return
-    if (!c || !c->snext || c->snext->tags != c->tags) {
+    if (!c || !csn || csn->tags != c->tags) {
         // exit snap mode
         selmon->isinsnap = 0;
         drawbar(selmon);
@@ -1734,13 +1744,14 @@ snapsidebyside()
     if (selmon->isinsnap) {
         selmon->isinsnap = 0;
         selmon->snap_tag = 0x0;
-        Client *csn = c->snext;
         if (c->w_before_snap != 0 && c->h_before_snap != 0)
             resizeclient(c, c->x_before_snap, c->y_before_snap, c->w_before_snap, c->h_before_snap);
         if (csn->w_before_snap != 0 && csn->h_before_snap != 0)
             resizeclient(csn, csn->x_before_snap, csn->y_before_snap, csn->w_before_snap, csn->h_before_snap);
         clear_client_size_pos_data(c);
         clear_client_size_pos_data(csn);
+        c->isinsnap = 0;
+        csn->isinsnap = 0;
     } else if (!selmon->isinsnap) {
         selmon->isinsnap = 1;
         selmon->snap_tag = c->tags;
@@ -1750,15 +1761,17 @@ snapsidebyside()
         c->w_before_snap = c->w;
         c->h_before_snap = c->h;
 
-        c->snext->x_before_snap = c->snext->x;
-        c->snext->y_before_snap = c->snext->y;
-        c->snext->w_before_snap = c->snext->w;
-        c->snext->h_before_snap = c->snext->h;
+        csn->x_before_snap = csn->x;
+        csn->y_before_snap = csn->y;
+        csn->w_before_snap = csn->w;
+        csn->h_before_snap = csn->h;
 
         int w = (selmon->mw - borderpx * 2) / 2;
         int h = selmon->mh - bh - borderpx * 2;
         resizeclient(c, selmon->mx, selmon->my + bh, w, h);
-        resizeclient(c->snext, selmon->mx + w, selmon->my + bh, w, h);
+        resizeclient(csn, selmon->mx + w, selmon->my + bh, w, h);
+        c->isinsnap = 1;
+        csn->isinsnap = 1;
     }
     drawbar(selmon);
 }
@@ -1803,6 +1816,7 @@ snap2left()
     int w = (selmon->mw - 2 * borderpx) / 2 - borderpx * 2;
     int h = selmon->mh - bh - 2 * borderpx;
     resizeclient(c, selmon->mx, selmon->my + bh, w, h);
+    c->isinsnap = 1;
 }
 
 void
@@ -1820,6 +1834,7 @@ snap2right()
     int w = (selmon->mw - 2 * borderpx) / 2;
     int h = selmon->mh - bh - 2 * borderpx;
     resizeclient(c, selmon->mx + w, selmon->my + bh, w, h);
+    c->isinsnap = 1;
 }
 
 void
@@ -1829,10 +1844,11 @@ adjustwidth(const Arg* arg)
     if (!c) return;
     Client* cn = c->snext;
     if (!cn) return;
+    if (!c->isinsnap || !cn->isinsnap) return;
 
     int offset = arg->i;
 
-    if (c->x == 0)
+    if (c->x == selmon->wx)
     {
         resizeclient(c, c->x, c->y, c->w + offset, c->h);
         resizeclient(cn, cn->x + offset, cn->y, cn->w + (~offset + 1), cn->h);
