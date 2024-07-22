@@ -65,7 +65,7 @@ When two windows are snapped side by side (both snap mode and dragged to edge), 
 
 # Anchor a Window as Always on Top
 
-This is complementary for the snap side by side feature. Sometimes you want to look at the one window and do some stuff in another, like taking some notes, and you don't want the other window to be hidden when you are searching or doing whatever in the original window. Now, press `Mod + XK_r` to anchor one of the window as always on top (there will be another little square down the title of the window), so you won't lose it when doing the things you want. As always, press the key combination again to revert.
+This is supplementary for the snap side by side feature. Sometimes you want to look at the one window and do some stuff in another, like taking some notes, and you don't want the other window to be hidden when you are searching or doing whatever in the original window. Now, press `Mod + XK_r` to anchor one of the window as always on top (there will be another little square down the title of the window), so you won't lose it when doing the things you want. As always, press the key combination again to revert.
 
 # Switch Between Two Windows Instantly
 
