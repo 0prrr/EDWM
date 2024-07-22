@@ -85,6 +85,8 @@ I've applied some patches so that:
 
 Rename `sample.config.mk.xxx` to `config.mk` according to the system you're on.
 
+Install dependency: `sudo apt install libxft-dev` (linux).
+
 Then `make && sudo make install clean` to compile and install.
 
 That's it! Enjoy!
