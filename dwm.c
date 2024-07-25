@@ -96,6 +96,7 @@ struct Client {
 	int isalwaysontop, isfixed, isfloating, isurgent, neverfocus, oldstate, isstaylow, issetfullscreen, isfullscreen, isinsnap;
 	Client *next;
 	Client *snext;
+    Client* switch_next;
 	Monitor *mon;
 	Window win;
 };
@@ -245,6 +246,7 @@ static void doswitchclient(const Arg *arg);
 static void raisetotop(const Arg *arg);
 static void staylow(const Arg *arg);
 static void clear_client_size_pos_data(Client* c);
+static void save_client_size_pos_data(Client* c);
 static void entertaskview();
 static void leavetaskview();
 static void snapsidebyside();
@@ -446,6 +448,8 @@ void
 attachstack(Client *c)
 {
 	c->snext = c->mon->stack;
+    if (c->snext && ISVISIBLE(c->snext))
+        c->switch_next = c->snext;
 	c->mon->stack = c;
 }
 
@@ -1720,6 +1724,17 @@ clear_client_size_pos_data(Client *c)
 }
 
 void
+save_client_size_pos_data(Client* c)
+{
+    if (!c) return;
+
+    c->x_before_snap = c->x;
+    c->y_before_snap = c->y;
+    c->w_before_snap = c->w;
+    c->h_before_snap = c->h;
+}
+
+void
 snapsidebyside()
 {
     Client* c;
@@ -1756,15 +1771,8 @@ snapsidebyside()
         selmon->isinsnap = 1;
         selmon->snap_tag = c->tags;
 
-        c->x_before_snap = c->x;
-        c->y_before_snap = c->y;
-        c->w_before_snap = c->w;
-        c->h_before_snap = c->h;
-
-        csn->x_before_snap = csn->x;
-        csn->y_before_snap = csn->y;
-        csn->w_before_snap = csn->w;
-        csn->h_before_snap = csn->h;
+        save_client_size_pos_data(c);
+        save_client_size_pos_data(csn);
 
         int w = (selmon->mw - borderpx * 2) / 2;
         int h = selmon->mh - bh - borderpx * 2;
@@ -1808,10 +1816,7 @@ snap2left()
     if (!c) return;
     if (selmon->isinsnap) return;
 
-    c->x_before_snap = c->x;
-    c->y_before_snap = c->y;
-    c->w_before_snap = c->w;
-    c->h_before_snap = c->h;
+    save_client_size_pos_data(c);
 
     int w = (selmon->mw - 2 * borderpx) / 2 - borderpx * 2;
     int h = selmon->mh - bh - 2 * borderpx;
@@ -1826,10 +1831,7 @@ snap2right()
     if (!c) return;
     if (selmon->isinsnap) return;
 
-    c->x_before_snap = c->x;
-    c->y_before_snap = c->y;
-    c->w_before_snap = c->w;
-    c->h_before_snap = c->h;
+    save_client_size_pos_data(c);
 
     int w = (selmon->mw - 2 * borderpx) / 2;
     int h = selmon->mh - bh - 2 * borderpx;
@@ -2425,8 +2427,8 @@ doswitchclient(const Arg *arg)
 {
     Client *c = selmon->sel;
     if (!c) return;
-    if (!c->snext) return;
-    focus(c->snext);
+    if (!c->switch_next) return;
+    focus(c->switch_next);
     restack(selmon);
 }
 
