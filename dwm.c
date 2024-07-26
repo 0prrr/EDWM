@@ -448,9 +448,10 @@ void
 attachstack(Client *c)
 {
 	c->snext = c->mon->stack;
+    c->mon->stack = c;
+
     if (c->snext && ISVISIBLE(c->snext))
         c->switch_next = c->snext;
-	c->mon->stack = c;
 }
 
 void
