@@ -1652,13 +1652,20 @@ void
 entertaskview()
 {
     // only 1 or no client, no need to enter task view
-    if (!selmon->sel || !selmon->sel->snext) return;
+    if (!selmon->sel) return;
+
+    Client *c;
+    int client_count = 0x0;
+    for (c = selmon->clients; c; c = c->next) {
+        if (c->tags == selmon->tagset[selmon->seltags])
+            client_count += 1;
+    }
+
+    if (client_count == 0x1) return;
 
     if (selmon->isinsnap)
         snapsidebyside();
 
-    Client *c;
-    int client_count = 0x0;
     selmon->istaskview = 0x1;
     selmon->taskview_tag = selmon->sel->tags;
     for (c = selmon->clients; c; c = c->next) {
@@ -1670,7 +1677,7 @@ entertaskview()
             // is going to make it hard to see. So when client count exceeds
             // 6, let's increase master area by number of client count - default
             // maximum client windows (4).
-            client_count += 1;
+
             // leavestaylow for staylow windows first
             if (c->isstaylow)
                 leavestaylow(c);

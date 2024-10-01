@@ -40,7 +40,7 @@ static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen win
 static const Layout layouts[] = {
 	/* symbol     arrange function */
     { "><>",      tile },    /* first entry is default */
-    { "[D]",      NULL }    /* no layout function means floating behavior, meaning in task view */
+    { "[T]",      NULL }    /* no layout function means floating behavior, meaning in task view */
 };
 
 /* key definitions */
