@@ -43,39 +43,39 @@ One thing about floating layout is that if some windows are hiding behind the cu
 
 You don't have to note anything, it's just a number :D
 
-# Snap Two Windows Side by Side With in One Shot
+## Snap Two Windows Side by Side With in One Shot
 
 Want to easily view two windows side by side on a screen, you got it now! `Mod + XK_e` now to snap two windows side by side, each take half of the screen. Press the key combinations again to restore each window to its original position and size. Handy!
 
-# Snap a Window To Left/Right Edge of the Screen Via Keyboard Shortcut
+## Snap a Window To Left/Right Edge of the Screen Via Keyboard Shortcut
 
 Want to snap one specific window to either side (left/right) of the screen? Press `Mod + Xk_j` to snap to the left, and `Mod + XK_k` to snap to the right. The window will take full height and half width of the screen. To restore the size, drag it back with mouse or press the key combination again.
 
-# Snap a Window To Left/Right Edge of the Screen Via Mouse Dragging
+## Snap a Window To Left/Right Edge of the Screen Via Mouse Dragging
 
 This is to mimic the behavior on windows, which I is a must have. Now, you just have to darag the window out of the left or right edge of the screen (currently at 20px mark), then the window will be snapped/docked to either side, taking half of the screen width. Multiple dipslay is supported, you can do this on either one of your connected displays. And to restore the window to its original size, just drag it away from the edge!
 
-# Swap Position of Snapped Windows Left and Right
+## Swap Position of Snapped Windows Left and Right
 
 When in snap mode, press `Mod + XK_s` to swap the windows from left to right as needed.
 
-# Increase and/or Decrease the Size When Windows Are Snapped
+## Increase and/or Decrease the Size When Windows Are Snapped
 
 When two windows are snapped side by side (both snap mode and dragged to edge), you can use `Mod + Shift + XK_j` to increase the width of one window, and the other window's width will decrease automatically; and use `Mod + Shift + XK_k` to do the opposite.
 
-# Anchor a Window as Always on Top
+## Anchor a Window as Always on Top
 
 This is supplementary for the snap side by side feature. Sometimes you want to look at the one window and do some stuff in another, like taking some notes, and you don't want the other window to be hidden when you are searching or doing whatever in the original window. Now, press `Mod + XK_r` to anchor one of the window as always on top (there will be another little square down the title of the window), so you won't lose it when doing the things you want. As always, press the key combination again to revert.
 
-# Switch Between Two Windows Instantly
+## Switch Between Two Windows Instantly
 
 I remember the default behavior of DWM when pressing `Mod + XK_Tab` is to cycle through all clients until you found the one you want. This is inconvenient if you want the one in the middle of the client stack. I want a feature where you can just quickly switch between two recently focused windows. Now, just press `Mod + XK_Tab` to do that, and press `Mod + XK_w` to cycle through all clients for the default behavior.
 
-# Stay Low
+## Stay Low
 
 Sometimes you want to quickly check some part of the main area screen for information but other windows are blocking the view, just press `Mod + XK_v` to shrink the window to lower right corner, after you're done, focuse on the shrunk window and press the key combination again to bring it back. Note that you'll lose focus on the window you want to shrink immediately after the operation.
 
-## Community Patches
+# Community Patches
 
 I've applied some patches so that:
 
