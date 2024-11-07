@@ -502,6 +502,7 @@ buttonpress(XEvent *e)
         }
         focus(c);
         restack(selmon);
+        selmon->nmaster = 1;
         XAllowEvents(dpy, ReplayPointer, CurrentTime);
         click = ClkClientWin;
 	}
